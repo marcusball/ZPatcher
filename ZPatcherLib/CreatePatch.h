@@ -41,7 +41,7 @@ namespace ZPatcher
 	/**
 	* Get the difference between two directories (oldVersion and newVersion) and build a PatchFileList_t containing all the changes
 	*/
-	PatchFileList_t* GetDifferences(std::string& oldVersion, std::string& newVersion, ProgressCallback progressFunction = &PrintCreatePatchProgressBar);
+	PatchFileList_t* GetDifferences(const std::string& logName, std::string& oldVersion, std::string& newVersion, ProgressCallback progressFunction = &PrintCreatePatchProgressBar);
 
 	/**
 	 * Creates the patch file with all the changes listed in patchFileList.
@@ -51,12 +51,12 @@ namespace ZPatcher
 	 * progressFunction is a pointer to a function to display the current progress. It defaults to our own PrintCreatePatchProgressBar(), but it can be changed.
 	 * LZMAProgressCallback is a pointer to a function to display the current progress of the file being compressed by the LZMA algorithm. It defaults to ZPatcher::OnProgress()
 	 */
-	bool CreatePatchFile(FILE* patchFile, std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction = &PrintCreatePatchProgressBar, ICompressProgress LZMAProgressCallback = { &OnProgress });
+	bool DoCreatePatchFile(FILE* patchFile, const std::string& logName, const std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction = &PrintCreatePatchProgressBar, ICompressProgress LZMAProgressCallback = { &OnProgress });
 
 	/**
 	 * This is a shortcut to CreatePatchFile() that receives the output patch file as a string
 	 */
-	bool CreatePatchFile(std::string& patchFileName, std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction = &PrintCreatePatchProgressBar, ICompressProgress LZMAProgressCallback = { &OnProgress });
+	bool CreatePatchFile(const std::string& patchFileName, const std::string& logName, const std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction = &PrintCreatePatchProgressBar, ICompressProgress LZMAProgressCallback = { &OnProgress });
 }
 
 #endif // _CREATEPATCH_H_

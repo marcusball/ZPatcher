@@ -27,13 +27,13 @@ namespace ZPatcher
 	 * Receives two files as input and stores in "result" if they are identical, byte to byte.
 	 * The function returns true if it executed successfully or false if there was an IO error.
 	 */
-	bool AreFilesIdentical(FILE* file1, FILE* file2, bool &result);
+	bool DoAreFilesIdentical(FILE* file1, FILE* file2, bool &result);
 
 	/**
 	* Receives two files as input and stores in "result" if they are identical, byte to byte, given their filenames.
 	* The function returns true if it executed successfully or false if there was an IO error.
 	*/
-	bool AreFilesIdentical(const std::string& file1, const std::string& file2, bool &result);
+	bool AreFilesIdentical(const std::string& logName, const std::string& file1, const std::string& file2, bool &result);
 
 	/**
 	 * Converts the supplied path to use forward slash
@@ -50,27 +50,27 @@ namespace ZPatcher
 	 * Create the supplied directory tree. It may or may not contain a file at the end - It will create directories up to until the last / found.
 	 * It will ignore silently if any directory in the tree that already exists.
 	 */
-	void CreateDirectoryTree(const std::string& directory);
+	void CreateDirectoryTree(const std::string& logName, const std::string& directory);
 
 	/**
 	 * Backup the supplied file to BackupSuffix folder
 	 */
-	bool BackupFile(const std::string& baseDirectory, const std::string& fileName, const std::string& suffix);
+	bool BackupFile(const std::string& logName, const std::string& baseDirectory, const std::string& fileName, const std::string& suffix);
 
 	/**
 	* Copy one file from source to target. Directory structure must already exist.
 	*/
-	bool CopyOneFile(const std::string& source, const std::string& target);
+	bool CopyOneFile(const std::string& logName, const std::string& source, const std::string& target);
 
 	/**
 	* Delete/Remove the supplied file
 	*/
-	bool RemoveFile(const std::string& fileName);
+	bool RemoveFile(const std::string& logName, const std::string& fileName);
 
 	/**
 	* Delete/Remove the supplied directory. It must be empty.
 	*/
-	bool RemoveOneDirectory(const std::string& directory);
+	bool RemoveOneDirectory(const std::string& logName, const std::string& directory);
 
 }
 

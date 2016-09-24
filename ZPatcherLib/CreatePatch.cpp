@@ -39,7 +39,7 @@ void ZPatcher::PrintCreatePatchProgressBar(const float& Percentage, const uint64
 	fflush(stdout);
 }
 
-ZPatcher::PatchFileList_t* ZPatcher::GetDifferences(std::string& oldVersion, std::string& newVersion, ProgressCallback progressFunction)
+ZPatcher::PatchFileList_t* ZPatcher::GetDifferences(const std::string& logName, std::string& oldVersion, std::string& newVersion, ProgressCallback progressFunction)
 {
 	PatchFileList_t* patchFileList = new PatchFileList_t();
 
@@ -74,7 +74,7 @@ ZPatcher::PatchFileList_t* ZPatcher::GetDifferences(std::string& oldVersion, std
 			{
 				// Check if the files have the same contents
 				bool identical;
-				bool success = AreFilesIdentical(oldVersion + "/" + oldFileName, newVersion + "/" + newFileName, identical);
+				bool success = AreFilesIdentical(logName, oldVersion + "/" + oldFileName, newVersion + "/" + newFileName, identical);
 
 				assert(success == true); // TODO: Handle this.
 
@@ -132,14 +132,14 @@ ZPatcher::PatchFileList_t* ZPatcher::GetDifferences(std::string& oldVersion, std
 	return patchFileList;
 }
 
-bool ZPatcher::CreatePatchFile(FILE* patchFile, std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction, ICompressProgress LZMAProgressCallback)
+bool ZPatcher::DoCreatePatchFile(FILE* patchFile, const std::string& logName, const std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction, ICompressProgress LZMAProgressCallback)
 {
 	// Initialize our custom LZMA2 Encoder
 	CLzma2EncHandle hLzma2Enc = InitLzma2Encoder();
 
 	fprintf(stdout, "Writing patch data...\n");
 
-	Log(LOG, "Writing patch data");
+	Log(logName, LOG, "Writing patch data");
 
 	// Write the file header, including our custom LZMA2 props
 	Byte props = Lzma2Enc_WriteProperties(hLzma2Enc);
@@ -155,7 +155,7 @@ bool ZPatcher::CreatePatchFile(FILE* patchFile, std::string& newVersionPath, Pat
 		float progress = ((float)++i / (float)totalFiles) * 100.0f;
 		progressFunction(progress, i, totalFiles);
 
-		Log(LOG, "[del] %s", ritr->c_str());
+		Log(logName, LOG, "[del] %s", ritr->c_str());
 
 		WriteFileInfo(patchFile, Patch_File_Delete, ritr->c_str());
 	}
@@ -166,7 +166,7 @@ bool ZPatcher::CreatePatchFile(FILE* patchFile, std::string& newVersionPath, Pat
 		float progress = ((float)++i / (float)totalFiles) * 100.0f;
 		progressFunction(progress, i, totalFiles);
 
-		Log(LOG, "[add] %s", itr->c_str());
+		Log(logName, LOG, "[add] %s", itr->c_str());
 
 		size_t fileNameLength = itr->length();
 		if (fileNameLength > 0 && (*itr)[fileNameLength - 1] != '/')
@@ -192,7 +192,7 @@ bool ZPatcher::CreatePatchFile(FILE* patchFile, std::string& newVersionPath, Pat
 		float progress = ((float)++i / (float)totalFiles) * 100.0f;
 		progressFunction(progress, i, totalFiles);
 
-		Log(LOG, "[mod] %s", itr->c_str());
+		Log(logName, LOG, "[mod] %s", itr->c_str());
 
 		WriteFileInfo(patchFile, Patch_File_Replace, itr->c_str());
 		std::string localPath = newVersionPath + "/" + *itr;
@@ -213,7 +213,7 @@ bool ZPatcher::CreatePatchFile(FILE* patchFile, std::string& newVersionPath, Pat
 		fprintf(stdout, "\n");
 	}
 
-	Log(LOG, "Patch data writing process completed");
+	Log(logName, LOG, "Patch data writing process completed");
 
 	DestroyLzma2EncHandle(hLzma2Enc);
 
@@ -221,7 +221,7 @@ bool ZPatcher::CreatePatchFile(FILE* patchFile, std::string& newVersionPath, Pat
 }
 
 
-bool ZPatcher::CreatePatchFile(std::string& patchFileName, std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction, ICompressProgress LZMAProgressCallback)
+bool ZPatcher::CreatePatchFile(const std::string& patchFileName, const std::string& logName, const std::string& newVersionPath, PatchFileList_t* patchFileList, ProgressCallback progressFunction, ICompressProgress LZMAProgressCallback)
 {
 	FILE* patchFile;
 
@@ -229,11 +229,11 @@ bool ZPatcher::CreatePatchFile(std::string& patchFileName, std::string& newVersi
 	patchFile = fopen(patchFileName.c_str(), "wb");
 	if (errno != 0)
 	{
-		Log(LOG_FATAL, "Error opening file \"%s\" to write patch data: %s", patchFileName.c_str(), strerror(errno));
+		Log(logName, LOG_FATAL, "Error opening file \"%s\" to write patch data: %s", patchFileName.c_str(), strerror(errno));
 		return false;
 	}
 
-	bool result = CreatePatchFile(patchFile, newVersionPath, patchFileList, progressFunction, LZMAProgressCallback);
+	bool result = DoCreatePatchFile(patchFile, logName, newVersionPath, patchFileList, progressFunction, LZMAProgressCallback);
 
 	fclose(patchFile);
 

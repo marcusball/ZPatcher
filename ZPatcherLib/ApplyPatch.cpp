@@ -46,7 +46,7 @@ void ZPatcher::PrintPatchApplyingProgressBar(const float& Percentage)
 	fflush(stdout);
 }
 
-bool ZPatcher::ApplyPatchFile(FILE* patchFile, const std::string& targetPath, uint64_t &previousVersionNumber, ProgressCallback progressCallback)
+bool ZPatcher::DoApplyPatchFile(FILE* patchFile, const std::string& logName, const std::string& targetPath, uint64_t &previousVersionNumber, ProgressCallback progressCallback)
 {
 	std::string prevVersionNumber = std::to_string(previousVersionNumber);
 
@@ -60,14 +60,14 @@ bool ZPatcher::ApplyPatchFile(FILE* patchFile, const std::string& targetPath, ui
 	size_t fileNameLength = normalizedTargetPath.length();
 	if (fileNameLength == 0 || normalizedTargetPath[fileNameLength - 1] != '/')
 	{
-		Log(LOG_FATAL, "Invalid target directory. It must end either with \\ or /.");
+		Log(logName, LOG_FATAL, "Invalid target directory. It must end either with \\ or /.");
 		return false;
 	}
 
 	Byte props;
 	if (!ReadPatchFileHeader(patchFile, props))
 	{
-		Log(LOG_FATAL, "Failed to read patch data.");
+		Log(logName, LOG_FATAL, "Failed to read patch data.");
 		return false;
 	}
 
@@ -121,7 +121,7 @@ bool ZPatcher::ApplyPatchFile(FILE* patchFile, const std::string& targetPath, ui
 			CreateDirectoryTree(normalizedTargetPath + outputFile);
 			break;
 		default:
-			Log(LOG_FATAL, "Undefined operation (%d) requested for file %s", static_cast<int>(operation), outputFile.c_str());
+			Log(logName, LOG_FATAL, "Undefined operation (%d) requested for file %s", static_cast<int>(operation), outputFile.c_str());
 			success = false; // Rollback the operation
 			break;
 		}
@@ -131,7 +131,7 @@ bool ZPatcher::ApplyPatchFile(FILE* patchFile, const std::string& targetPath, ui
 	if (success)
 	{
 		// Everything went fine, so, let's do a backup cleanup
-		Log(LOG, "Patching successful! Removing backup directory.");
+		Log(logName, LOG, "Patching successful! Removing backup directory.");
 		std::string backupDirectoryName = normalizedTargetPath + "/" + "backup-" + prevVersionNumber + "/";
 		DeleteDirectoryTree(backupDirectoryName);
 		progressCallback(100.0f);
@@ -140,11 +140,11 @@ bool ZPatcher::ApplyPatchFile(FILE* patchFile, const std::string& targetPath, ui
 	{
 		// Something bad happened. Roll back.
 		bool restoreSucess = true;
-		Log(LOG_FATAL, "Something went wrong with the patch process! Rolling back!");
+		Log(logName, LOG_FATAL, "Something went wrong with the patch process! Rolling back!");
 		restoreSucess = restoreSucess && RestoreBackup(backupFileList, addedFileList, normalizedTargetPath, prevVersionNumber);
 
 		if (!restoreSucess)
-			Log(LOG_FATAL, "At least one file failed to be restored! The application is probably in an inconsistent state!");
+			Log(logName, LOG_FATAL, "At least one file failed to be restored! The application is probably in an inconsistent state!");
 	}
 
 	DestroyLzma2Decoder(decoder);
@@ -152,7 +152,7 @@ bool ZPatcher::ApplyPatchFile(FILE* patchFile, const std::string& targetPath, ui
 	return success;
 }
 
-bool ZPatcher::ApplyPatchFile(const std::string& patchFileName, const std::string& targetPath, uint64_t& previousVersionNumber, ProgressCallback progressCallback)
+bool ZPatcher::ApplyPatchFile(const std::string& patchFileName, const std::string& logName, const std::string& targetPath, uint64_t& previousVersionNumber, ProgressCallback progressCallback)
 {
 	FILE* patchFile;
 
@@ -163,13 +163,13 @@ bool ZPatcher::ApplyPatchFile(const std::string& patchFileName, const std::strin
 	patchFile = fopen(normalizedPatchFileName.c_str(), "rb");
 	if(errno != 0)
 	{
-		Log(LOG_FATAL, "Unable to open for reading the patch file %s: %s", normalizedPatchFileName.c_str(), strerror(errno));
+		Log(logName, LOG_FATAL, "Unable to open for reading the patch file %s: %s", normalizedPatchFileName.c_str(), strerror(errno));
 		return false;
 	}
 
-	Log(LOG, "Reading patch file %s", normalizedPatchFileName.c_str());
+	Log(logName, LOG, "Reading patch file \"%s\"", normalizedPatchFileName.c_str());
 
-	bool success = ApplyPatchFile(patchFile, targetPath, previousVersionNumber, progressCallback);
+	bool success = DoApplyPatchFile(patchFile, logName, targetPath, previousVersionNumber, progressCallback);
 
 	fclose(patchFile);
 

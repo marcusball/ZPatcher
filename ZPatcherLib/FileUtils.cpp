@@ -86,7 +86,7 @@ bool ZPatcher::GetFilesInDirectory(std::vector<std::string>& fileList, const std
 	return true;
 }
 
-bool ZPatcher::AreFilesIdentical(FILE* file1, FILE* file2, bool &result)
+bool ZPatcher::DoAreFilesIdentical(FILE* file1, FILE* file2, bool &result)
 {
 
 	// Compare their size, first
@@ -129,7 +129,7 @@ bool ZPatcher::AreFilesIdentical(FILE* file1, FILE* file2, bool &result)
 	return true;
 }
 
-bool ZPatcher::AreFilesIdentical(const std::string& file1, const std::string& file2, bool &result)
+bool ZPatcher::AreFilesIdentical(const std::string& logName, const std::string& file1, const std::string& file2, bool &result)
 {
 	FILE* f1;
 	FILE* f2;
@@ -138,7 +138,7 @@ bool ZPatcher::AreFilesIdentical(const std::string& file1, const std::string& fi
 	f1 = fopen(file1.c_str(), "rb");
 	if (errno != 0)
 	{
-		Log(LOG_FATAL, "Error opening file \"%s\" to reading for data comparison: %s", file1.c_str(), strerror(errno));
+		Log(logName, LOG_FATAL, "Error opening file \"%s\" to reading for data comparison: %s", file1.c_str(), strerror(errno));
 		result = false;
 		return false;
 	}
@@ -147,12 +147,12 @@ bool ZPatcher::AreFilesIdentical(const std::string& file1, const std::string& fi
 	f2 = fopen(file2.c_str(), "rb");
 	if (errno != 0)
 	{
-		Log(LOG_FATAL, "Error opening file \"%s\" to reading for data comparison: %s", file2.c_str(), strerror(errno));
+		Log(logName, LOG_FATAL, "Error opening file \"%s\" to reading for data comparison: %s", file2.c_str(), strerror(errno));
 		result = false;
 		return false;
 	}
 
-	bool success = AreFilesIdentical(f1, f2, result);
+	bool success = DoAreFilesIdentical(f1, f2, result);
 
 	fclose(f1);
 	fclose(f2);
@@ -230,9 +230,9 @@ bool ZPatcher::DeleteDirectoryTree(const std::string& base, const std::string di
 	return true;
 }
 
-void ZPatcher::CreateDirectoryTree(const std::string& directory)
+void ZPatcher::CreateDirectoryTree(const std::string& logName, const std::string& directory)
 {
-	Log(LOG, "Creating directory tree: %s", directory.c_str());
+	Log(logName, LOG, "Creating directory tree: %s", directory.c_str());	
 	const char* slash = strpbrk(directory.c_str(), "\\/");
 	while (slash != NULL)
 	{
@@ -253,7 +253,7 @@ void ZPatcher::CreateDirectoryTree(const std::string& directory)
 
 }
 
-bool ZPatcher::BackupFile(const std::string& baseDirectory, const std::string& fileName, const std::string& suffix)
+bool ZPatcher::BackupFile(const std::string& logName, const std::string& baseDirectory, const std::string& fileName, const std::string& suffix)
 {
 	// Create the backup directory structure
 	std::string fullFilename = baseDirectory + "/" + fileName;
@@ -261,25 +261,25 @@ bool ZPatcher::BackupFile(const std::string& baseDirectory, const std::string& f
 // 	size_t lastSlash = fullBackupFileName.find_last_of("\\/");
 // 	fullBackupFileName.insert(lastSlash, "/backup-" + suffix);
 
-	Log(LOG, "Backing up file %s to %s (There should be a Create Directory Tree, Copy and Delete below)", fullFilename.c_str(), fullBackupFileName.c_str());
+	Log(logName, LOG, "Attempting to backup up file %s to %s", fullFilename.c_str(), fullBackupFileName.c_str());
 
-	CreateDirectoryTree(fullBackupFileName);
-	return CopyOneFile(fullFilename, fullBackupFileName);
+	CreateDirectoryTree(logName, fullBackupFileName);
+	return CopyOneFile(logName, fullFilename, fullBackupFileName);
 }
 
-bool ZPatcher::CopyOneFile(const std::string& source, const std::string& target)
+bool ZPatcher::CopyOneFile(const std::string& logName, const std::string& source, const std::string& target)
 {
 	FILE* sourceFile;
 	FILE* targetFile;
 
-	Log(LOG, "Copying file %s to %s", source.c_str(), target.c_str());
+	Log(logName, LOG, "Copying file %s to %s", source.c_str(), target.c_str());
 
 	// Open source and target file
 	errno = 0;
 	sourceFile = fopen(source.c_str(), "rb");
 	if (errno != 0)
 	{
-		Log(LOG_FATAL, "Error opening file \"%s\" to read for copy: %s", source.c_str(), strerror(errno));
+		Log(logName, LOG_FATAL, "Error opening file \"%s\" to read for copy: %s", source.c_str(), strerror(errno));
 		return false;
 	}
 
@@ -287,7 +287,7 @@ bool ZPatcher::CopyOneFile(const std::string& source, const std::string& target)
 	targetFile = fopen(target.c_str(), "wb");
 	if (errno != 0)
 	{
-		Log(LOG_FATAL, "Error opening file \"%s\" to write for copy: %s", target.c_str(), strerror(errno));
+		Log(logName, LOG_FATAL, "Error opening file \"%s\" to write for copy: %s", target.c_str(), strerror(errno));
 		fclose(sourceFile);
 		return false;
 	}
@@ -316,24 +316,24 @@ bool ZPatcher::CopyOneFile(const std::string& source, const std::string& target)
 	return true;
 }
 
-bool ZPatcher::RemoveFile(const std::string& fileName)
+bool ZPatcher::RemoveFile(const std::string& logName, const std::string& fileName)
 {
-	Log(LOG, "Deleting file: %s", fileName.c_str());
+	Log(logName, LOG, "Deleting file: %s", fileName.c_str());
 
 	errno = 0;
 	int result = remove(fileName.c_str());
 	if (result != 0)
 	{
-		Log(LOG_FATAL, "Error deleting file: %s", strerror(errno));
+		Log(logName, LOG_FATAL, "Error deleting file: %s", strerror(errno));
 		return false;
 	}
 
 	return true;
 }
 
-bool ZPatcher::RemoveOneDirectory(const std::string& directory)
+bool ZPatcher::RemoveOneDirectory(const std::string& logName, const std::string& directory)
 {
-	Log(LOG, "Removing directory %s", directory.c_str());
+	Log(logName, LOG, "Removing directory %s", directory.c_str());
 
 	errno = 0;
 
@@ -345,7 +345,7 @@ bool ZPatcher::RemoveOneDirectory(const std::string& directory)
 
 	if (result != 0)
 	{
-		Log(LOG_FATAL, "Error removing directory %s: %s", directory.c_str(), strerror(errno));
+		Log(logName, LOG_FATAL, "Error removing directory %s: %s", directory.c_str(), strerror(errno));
 		return false;
 	}
 

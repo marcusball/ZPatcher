@@ -173,10 +173,6 @@ wxThread::ExitCode ZLauncherThread::Entry()
 		std::string fileName = std::string(patch.fileURL, length + 1, std::string::npos);
 		std::string localFullPath = (updatesDirectory + fileName);
 
-		ZPatcher::DestroyLogSystem();
-		// We're going to store a log for each patch applied.
-		ZPatcher::InitLogSystem("./", "ZLauncher_" + fileName);
-
 		// Check if we already have a file downloaded with the same name as the patch.
 		// If the file exists, check if the MD5 hash matches. If not, re-download the file.
 		bool MD5Matches = false;
@@ -228,7 +224,7 @@ wxThread::ExitCode ZLauncherThread::Entry()
 		m_pHandler->m_pThreadCS.Enter();
 
 		// At this point, we have the patch file and the MD5 hash matches. Apply it!
-		if (ZPatcher::ApplyPatchFile(localFullPath, m_targetDirectory, m_LocalCurrentVersion, &ZLauncherFrame::ApplyPatchProgress))
+		if (ZPatcher::ApplyPatchFile(localFullPath, "ZLauncher - " + fileName, m_targetDirectory, m_LocalCurrentVersion, &ZLauncherFrame::ApplyPatchProgress))
 		{
 			if (!SaveTargetNewVersion(m_versionFile, patch.targetBuildNumber))
 			{
